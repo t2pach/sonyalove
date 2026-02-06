@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Будешь моей валентинкой?</title>
+    <style>
+        /* ============================================
+           БАЗОВЫЕ СТИЛИ И СБРОС
+           ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-pink: #ff6b9d;
+            --deep-pink: #ff4081;
+            --light-pink: #ffb6c1;
+            --peach: #ffdab9;
+            --rose: #ff1744;
+            --soft-red: #ff5252;
+            --white: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            position: relative;
+        }
+
+        /* ============================================
+           CANVAS ФОН С СЕРДЕЧКАМИ
+           ============================================ */
+        #heartCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ============================================
+           ГЛАВНАЯ КАРТОЧКА
+           ============================================ */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .valentine-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 
+                0 8px 32px rgba(255, 107, 157, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            max-width: 450px;
+            width: 100%;
+            opacity: 0;
+            transform: scale(0.8) translateY(30px);
+            filter: blur(10px);
+            animation: cardAppear 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            animation-delay: 0.3s;
+        }
+
+        @keyframes cardAppear {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(0);
+            }
+        }
+
+        .card-header {
+            font-size: 1.3rem;
+            color: var(--deep-pink);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 0.8s;
+        }
+
+        .card-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--rose);
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(255, 23, 68, 0.2);
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 1s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ============================================
+           КНОПКИ
+           ============================================ */
+        .buttons-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 1.2s;
+        }
+
+        .btn {
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-yes {
+            background: linear-gradient(135deg, var(--primary-pink) 0%, var(--deep-pink) 100%);
+            color: white;
+            box-shadow: 
+                0 4px 15px rgba(255, 107, 157, 0.4),
+                0 0 30px rgba(255, 107, 157, 0.2);
+        }
+
+        .btn-yes:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 8px 25px rgba(255, 107, 157, 0.5),
+                0 0 40px rgba(255, 107, 157, 0.3);
+        }
+
+        .btn-yes:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .btn-no {
+            background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+            color: #666;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .btn-no:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #ff1744 100%);
+            color: white;
+        }
+
+        /* ============================================
+           МОДАЛЬНОЕ ОКНО (ЛОВУШКА)
+           ============================================ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--rose);
+            margin-bottom: 30px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-modal {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-modal-yes {
+            background: var(--rose);
+            color: white;
+        }
+
+        .btn-modal-no {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .btn-modal:hover {
+            transform: scale(1.05);
+        }
+
+        /* ============================================
+           ФИНАЛЬНЫЙ ЭКРАН (LOVE STORY)
+           ============================================ */
+        .final-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2d1b2e 0%, #1a0f1a 100%);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .final-screen.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .photo-container {
+            position: relative;
+            width: 80%;
+            max-width: 500px;
+            aspect-ratio: 3/4;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 60px rgba(255, 107, 157, 0.5),
+                0 0 120px rgba(255, 107, 157, 0.2);
+            opacity: 0;
+            filter: blur(20px);
+            transform: scale(0.8);
+        }
+
+        .photo-container.show {
+            animation: photoReveal 2s ease forwards;
+        }
+
+        @keyframes photoReveal {
+            to {
+                opacity: 1;
+                filter: blur(0);
+                transform: scale(1);
+            }
+        }
+
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-glow {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            background: linear-gradient(45deg, var(--primary-pink), var(--deep-pink), var(--rose));
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0.5;
+            filter: blur(30px);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.02); }
+        }
+
+        .final-text {
+            margin-top: 40px;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 0 0 30px rgba(255, 107, 157, 0.8);
+            opacity: 0;
+        }
+
+        .final-text.show {
+            animation: textReveal 1.5s ease forwards;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes textReveal {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .final-hearts-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ============================================
+           СПЕЦЭФФЕКТЫ СЕРДЕЧЕК ПРИ КЛИКЕ
+           ============================================ */
+        .click-heart {
+            position: fixed;
+            pointer-events: none;
+            z-index: 5000;
+            font-size: 24px;
+            animation: clickHeartFloat 1s ease-out forwards;
+        }
+
+        @keyframes clickHeartFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(1.5);
+            }
+        }
+
+        /* ============================================
+           АДАПТИВНОСТЬ
+           ============================================ */
+        @media (max-width: 480px) {
+            .valentine-card {
+                padding: 35px 25px;
+            }
+
+            .card-header {
+                font-size: 1.1rem;
+            }
+
+            .card-title {
+                font-size: 1.9rem;
+            }
+
+            .btn {
+                padding: 15px 40px;
+                font-size: 1.1rem;
+            }
+
+            .final-text {
+                font-size: 2rem;
+            }
+        }
+
+        /* ============================================
+           АНИМАЦИЯ ОТКАЗА (ШУТОЧНАЯ)
+           ============================================ */
+        .reject-animation {
+            animation: rejectShake 0.5s ease;
+        }
+
+        @keyframes rejectShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px) rotate(-5deg); }
+            40% { transform: translateX(10px) rotate(5deg); }
+            60% { transform: translateX(-10px) rotate(-5deg); }
+            80% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        /* Сообщение об отказе */
+        .reject-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 3000;
+            display: none;
+            text-align: center;
+        }
+
+        .reject-message.show {
+            display: block;
+            animation: rejectPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes rejectPop {
+            from {
+                transform: translate(-50%, -50%) scale(0);
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .reject-text {
+            font-size: 1.3rem;
+            color: var(--rose);
+            margin-bottom: 20px;
+        }
+
+        .btn-ok {
+            background: var(--primary-pink);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================
+         CANVAS ДЛЯ ФОНОВЫХ СЕРДЕЧЕК
+         ============================================ -->
+    <canvas id="heartCanvas"></canvas>
+
+    <!-- ============================================
+         ГЛАВНАЯ КАРТОЧКА
+         ============================================ -->
+    <div class="main-container">
+        <div class="valentine-card">
+            <div class="card-header">Для самой лучшей 💖✨</div>
+            <h1 class="card-title">Будешь моей валентинкой?</h1>
+            <div class="buttons-container">
+                <button class="btn btn-yes" id="btnYes">Да 💕</button>
+                <button class="btn btn-no" id="btnNo">Нет</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         МОДАЛЬНОЕ ОКНО (ЛОВУШКА)
+         ============================================ -->
+    <div class="modal-overlay" id="trapModal">
+        <div class="modal">
+            <h2 class="modal-title">Ты уверена? 🤔</h2>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-modal-yes" id="modalYes">Да</button>
+                <button class="btn-modal btn-modal-no" id="modalNo">Нет</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         СООБЩЕНИЕ ОБ ОТКАЗЕ
+         ============================================ -->
+    <div class="reject-message" id="rejectMessage">
+        <p class="reject-text">Такого варианта ответа не существует 😊</p>
+        <button class="btn-ok" id="btnOk">Понятно</button>
+    </div>
+
+    <!-- ============================================
+         ФИНАЛЬНЫЙ ЭКРАН (LOVE STORY)
+         ============================================ -->
+    <div class="final-screen" id="finalScreen">
+        <canvas class="final-hearts-canvas" id="finalHeartsCanvas"></canvas>
+        <div class="photo-container" id="photoContainer">
+            <div class="photo-glow"></div>
+            <!-- 
+                ЗАМЕНИТЕ ИЗОБРАЖЕНИЕ НИЖЕ:
+                Замените src на путь к вашему фото
+            -->
+            <img src="moe-foto.jpg" alt="Наше фото" id="couplePhoto">
+        </div>
+        <h2 class="final-text" id="finalText">Люблю тебя ❤️</h2>
+    </div>
+
+    <script>
+        /* ============================================
+           ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+           ============================================ */
+        const canvas = document.getElementById('heartCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnYes = document.getElementById('btnYes');
+        const btnNo = document.getElementById('btnNo');
+        const trapModal = document.getElementById('trapModal');
+        const modalYes = document.getElementById('modalYes');
+        const modalNo = document.getElementById('modalNo');
+        const rejectMessage = document.getElementById('rejectMessage');
+        const btnOk = document.getElementById('btnOk');
+        const finalScreen = document.getElementById('finalScreen');
+        const photoContainer = document.getElementById('photoContainer');
+        const finalText = document.getElementById('finalText');
+        const finalHeartsCanvas = document.getElementById('finalHeartsCanvas');
+        const finalCtx = finalHeartsCanvas.getContext('2d');
+
+        let width, height;
+        let hearts = [];
+        let finalHearts = [];
+        let mouseX = 0, mouseY = 0;
+        let noAttempts = 0;
+        let isAudioInitialized = false;
+        let animationId;
+        let finalAnimationId;
+
+        // Проверка на мобильное устройство
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        /* ============================================
+           КЛАСС СЕРДЕЧКА ДЛЯ ФОНА
+           ============================================ */
+        class Heart {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 100;
+                this.size = Math.random() * 20 + 10;
+                this.speedY = Math.random() * 1 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+                this.color = this.getRandomColor();
+                this.oscillation = Math.random() * Math.PI * 2;
+                this.oscillationSpeed = Math.random() * 0.02 + 0.01;
+            }
+
+            getRandomColor() {
+                const colors = [
+                    '#ff6b9d', '#ff4081', '#ffb6c1', 
+                    '#ff1744', '#ff5252', '#ffd1dc'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                // Движение вверх
+                this.y -= this.speedY;
+                
+                // Горизонтальная осцилляция
+                this.oscillation += this.oscillationSpeed;
+                this.x += Math.sin(this.oscillation) * 0.5 + this.speedX;
+                
+                // Вращение
+                this.rotation += this.rotationSpeed;
+
+                // Параллакс от мыши (только на десктопе)
+                if (!isMobile) {
+                    const parallaxX = (mouseX - width / 2) * 0.001 * this.size;
+                    const parallaxY = (mouseY - height / 2) * 0.001 * this.size;
+                    this.x += parallaxX * 0.01;
+                    this.y += parallaxY * 0.01;
+                }
+
+                // Сброс если вышло за экран
+                if (this.y < -50) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                this.drawHeartShape(0, 0, this.size);
+                ctx.restore();
+            }
+
+            drawHeartShape(x, y, size) {
+                ctx.beginPath();
+                const topCurveHeight = size * 0.3;
+                ctx.moveTo(x, y + topCurveHeight);
+                
+                // Верхняя левая кривая
+                ctx.bezierCurveTo(
+                    x, y,
+                    x - size / 2, y,
+                    x - size / 2, y + topCurveHeight
+                );
+                
+                // Нижняя левая кривая
+                ctx.bezierCurveTo(
+                    x - size / 2, y + (size + topCurveHeight) / 2,
+                    x, y + (size + topCurveHeight) / 2,
+                    x, y + size
+                );
+                
+                // Нижняя правая кривая
+                ctx.bezierCurveTo(
+                    x, y + (size + topCurveHeight) / 2,
+                    x + size / 2, y + (size + topCurveHeight) / 2,
+                    x + size / 2, y + topCurveHeight
+                );
+                
+                // Верхняя правая кривая
+                ctx.bezierCurveTo(
+                    x + size / 2, y,
+                    x, y,
+                    x, y + topCurveHeight
+                );
+                
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        /* ============================================
+           КЛАСС СЕРДЕЧКА ДЛЯ ФИНАЛЬНОГО ЭКРАНА
+           ============================================ */
+        class FinalHeart {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 100;
+                this.size = Math.random() * 15 + 5;
+                this.speedY = Math.random() * 0.8 + 0.3;
+                this.opacity = Math.random() * 0.6 + 0.3;
+                this.color = ['#ff6b9d', '#ff4081', '#ffb6c1', '#ff1744'][Math.floor(Math.random() * 4)];
+            }
+
+            update() {
+                this.y -= this.speedY;
+                this.x += Math.sin(this.y * 0.01) * 0.3;
+                
+                if (this.y < -50) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                finalCtx.save();
+                finalCtx.globalAlpha = this.opacity;
+                finalCtx.fillStyle = this.color;
+                finalCtx.translate(this.x, this.y);
+                
+                // Простое сердечко
+                finalCtx.beginPath();
+                finalCtx.moveTo(0, -this.size / 4);
+                finalCtx.quadraticCurveTo(-this.size / 2, -this.size / 2, -this.size / 2, 0);
+                finalCtx.quadraticCurveTo(-this.size / 2, this.size / 2, 0, this.size);
+                finalCtx.quadraticCurveTo(this.size / 2, this.size / 2, this.size / 2, 0);
+                finalCtx.quadraticCurveTo(this.size / 2, -this.size / 2, 0, -this.size / 4);
+                finalCtx.fill();
+                
+                finalCtx.restore();
+            }
+        }
+
+        /* ============================================
+           ИНИЦИАЛИЗАЦИЯ CANVAS
+           ============================================ */
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            finalHeartsCanvas.width = width;
+            finalHeartsCanvas.height = height;
+        }
+
+        function initHearts() {
+            hearts = [];
+            const heartCount = isMobile ? 25 : 50;
+            for (let i = 0; i < heartCount; i++) {
+                const heart = new Heart();
+                heart.y = Math.random() * height;
+                hearts.push(heart);
+            }
+        }
+
+        function initFinalHearts() {
+            finalHearts = [];
+            for (let i = 0; i < 30; i++) {
+                const heart = new FinalHeart();
+                heart.y = Math.random() * height;
+                finalHearts.push(heart);
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            hearts.forEach(heart => {
+                heart.update();
+                heart.draw();
+            });
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function animateFinal() {
+            finalCtx.clearRect(0, 0, width, height);
+            
+            finalHearts.forEach(heart => {
+                heart.update();
+                heart.draw();
+            });
+            
+            finalAnimationId = requestAnimationFrame(animateFinal);
+        }
+
+        /* ============================================
+           ОТСЛЕЖИВАНИЕ МЫШИ (ПАРАЛЛАКС)
+           ============================================ */
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        /* ============================================
+           ЗВУКОВЫЕ ЭФФЕКТЫ
+           ============================================ */
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            isAudioInitialized = true;
+        }
+
+        // Генерация звука "поп"
+        function playPopSound() {
+            if (!isAudioInitialized || !audioCtx) return;
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // Генерация романтического звука
+        function playRomanticSound() {
+            if (!isAudioInitialized || !audioCtx) return;
+            
+            // Создаём красивый аккорд
+            const frequencies = [523.25, 659.25, 783.99, 1046.50]; // C major chord
+            
+            frequencies.forEach((freq, i) => {
+                setTimeout(() => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 0.5);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
+                    
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 3);
+                }, i * 100);
+            });
+        }
+
+        // Финальный звук
+        function playFinalSound() {
+            if (!isAudioInitialized || !audioCtx) return;
+            
+            const frequencies = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+            
+            frequencies.forEach((freq, i) => {
+                setTimeout(() => {
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    oscillator.type = i % 2 === 0 ? 'sine' : 'triangle';
+                    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 1);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 5);
+                    
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 5);
+                }, i * 150);
+            });
+        }
+
+        /* ============================================
+           ВИБРАЦИЯ
+           ============================================ */
+        function vibrate(pattern) {
+            if (navigator.vibrate) {
+                navigator.vibrate(pattern);
+            }
+        }
+
+        /* ============================================
+           СПЕЦЭФФЕКТЫ СЕРДЕЧЕК ПРИ КЛИКЕ
+           ============================================ */
+        function createClickHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.className = 'click-heart';
+            heart.innerHTML = ['💕', '💖', '💗', '💓', '💝'][Math.floor(Math.random() * 5)];
+            heart.style.left = x + 'px';
+            heart.style.top = y + 'px';
+            document.body.appendChild(heart);
+            
+            setTimeout(() => heart.remove(), 1000);
+        }
+
+        function createHeartExplosion(x, y) {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const offsetX = (Math.random() - 0.5) * 200;
+                    const offsetY = (Math.random() - 0.5) * 200;
+                    createClickHeart(x + offsetX, y + offsetY);
+                }, i * 50);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            createClickHeart(e.clientX, e.clientY);
+        });
+
+        /* ============================================
+           ЛОГИКА КНОПКИ "ДА"
+           ============================================ */
+        btnYes.addEventListener('click', async (e) => {
+            initAudio();
+            playRomanticSound();
+            vibrate([100, 50, 200, 50, 300]);
+            createHeartExplosion(e.clientX, e.clientY);
+            
+            // Показываем финальный экран
+            setTimeout(() => {
+                showFinalScreen();
+            }, 500);
+        });
+
+        btnYes.addEventListener('mouseenter', () => {
+            playPopSound();
+            vibrate(20);
+        });
+
+        /* ============================================
+           ЛОГИКА КНОПКИ "НЕТ" (УБЕГАЮЩАЯ)
+           ============================================ */
+        function moveNoButton() {
+            noAttempts++;
+            
+            const cardRect = document.querySelector('.valentine-card').getBoundingClientRect();
+            const btnRect = btnNo.getBoundingClientRect();
+            
+            // Вычисляем доступную область внутри карточки
+            const maxX = cardRect.width - btnRect.width - 40;
+            const maxY = cardRect.height - btnRect.height - 40;
+            
+            // Случайная позиция
+            const newX = Math.random() * maxX;
+            const newY = Math.random() * maxY;
+            
+            btnNo.style.position = 'absolute';
+            btnNo.style.left = newX + 'px';
+            btnNo.style.top = newY + 'px';
+            btnNo.style.transition = `all ${Math.max(0.1, 0.3 - noAttempts * 0.02)}s ease`;
+        }
+
+        // Десктоп: убегание от курсора
+        if (!isMobile) {
+            btnNo.addEventListener('mouseenter', () => {
+                initAudio();
+                playPopSound();
+                vibrate(30);
+                moveNoButton();
+            });
+        }
+
+        // Мобильные: телепортация при касании
+        btnNo.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initAudio();
+            playPopSound();
+            vibrate(30);
+            moveNoButton();
+        });
+
+        // Клик по кнопке "Нет" открывает ловушку
+        btnNo.addEventListener('click', (e) => {
+            if (isMobile) return; // На мобильных просто телепортируется
+            
+            initAudio();
+            playPopSound();
+            vibrate(50);
+            trapModal.classList.add('active');
+        });
+
+        /* ============================================
+           ЛОГИКА МОДАЛЬНОГО ОКНА (ЛОВУШКА)
+           ============================================ */
+        modalYes.addEventListener('click', () => {
+            playPopSound();
+            vibrate([50, 30, 50]);
+            trapModal.classList.remove('active');
+            rejectMessage.classList.add('show');
+            
+            // Добавляем анимацию отказа
+            document.querySelector('.valentine-card').classList.add('reject-animation');
+            setTimeout(() => {
+                document.querySelector('.valentine-card').classList.remove('reject-animation');
+            }, 500);
+        });
+
+        modalNo.addEventListener('click', () => {
+            playPopSound();
+            vibrate(20);
+            trapModal.classList.remove('active');
+        });
+
+        btnOk.addEventListener('click', () => {
+            playPopSound();
+            rejectMessage.classList.remove('show');
+        });
+
+        // Закрытие модалки по клику на оверлей
+        trapModal.addEventListener('click', (e) => {
+            if (e.target === trapModal) {
+                trapModal.classList.remove('active');
+            }
+        });
+
+        /* ============================================
+           ФИНАЛЬНЫЙ ЭКРАН
+           ============================================ */
+        function showFinalScreen() {
+            // Останавливаем фоновую анимацию
+            cancelAnimationFrame(animationId);
+            
+            // Показываем финальный экран
+            finalScreen.classList.add('active');
+            
+            // Запускаем финальный звук
+            playFinalSound();
+            
+            // Усиленная вибрация
+            vibrate([200, 100, 300, 100, 400]);
+            
+            // Показываем фото с задержкой
+            setTimeout(() => {
+                photoContainer.classList.add('show');
+            }, 500);
+            
+            // Показываем текст
+            setTimeout(() => {
+                finalText.classList.add('show');
+            }, 1500);
+            
+            // Запускаем анимацию сердечек на финальном экране
+            initFinalHearts();
+            animateFinal();
+        }
+
+        /* ============================================
+           ИНИЦИАЛИЗАЦИЯ
+           ============================================ */
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initHearts();
+        });
+
+        // Первоначальная инициализация
+        resizeCanvas();
+        initHearts();
+        animate();
+
+        // Инициализация аудио при первом взаимодействии
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
+
+        console.log('💕 Valentine Site Loaded! 💕');
+        console.log('Замените изображение в теге <img id="couplePhoto"> на своё фото!');
+    </script>
+</body>
+</html>
