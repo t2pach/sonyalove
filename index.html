@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Будешь моей валентинкой?</title>
-    <link rel="preload" as="image" href="moe-foto-mobile.jpg" media="(max-width: 768px)" fetchpriority="high">
-    <link rel="preload" as="image" href="moe-foto.jpg" media="(min-width: 769px)" fetchpriority="high">
+    <link rel="preload" as="image" href="/moe-foto-mobile.jpg" media="(max-width: 768px)" fetchpriority="high">
+    <link rel="preload" as="image" href="/moe-foto.jpg" media="(min-width: 769px)" fetchpriority="high">
     <style>
         /* ============================================
            БАЗОВЫЕ СТИЛИ И СБРОС
@@ -700,8 +700,8 @@
                 - moe-foto.jpg (основная версия)
             -->
             <picture>
-                <source srcset="moe-foto-mobile.jpg" media="(max-width: 768px)">
-                <img src="moe-foto.jpg" alt="Наше фото" id="couplePhoto" loading="eager" decoding="async" fetchpriority="high" width="714" height="1280">
+                <source srcset="/moe-foto-mobile.jpg" media="(max-width: 768px)">
+                <img src="/moe-foto.jpg" alt="Наше фото" id="couplePhoto" data-fallback-src="/moe-foto.jpg" loading="eager" decoding="async" fetchpriority="high" width="714" height="1280">
             </picture>
         </div>
         <div class="final-notes" id="finalNotes">
@@ -725,6 +725,7 @@
         const btnOk = document.getElementById('btnOk');
         const finalScreen = document.getElementById('finalScreen');
         const photoContainer = document.getElementById('photoContainer');
+        const couplePicture = photoContainer.querySelector('picture');
         const couplePhoto = document.getElementById('couplePhoto');
         const finalHeader = document.getElementById('finalHeader');
         const finalNotes = document.getElementById('finalNotes');
@@ -1243,6 +1244,16 @@
             await typeText(finalNoteSecondary, finalNoteSecondary.dataset.fullText || '', 16);
         }
 
+        function applyPhotoFallback() {
+            if (couplePhoto.dataset.fallbackApplied === '1') return;
+
+            couplePhoto.dataset.fallbackApplied = '1';
+            if (couplePicture) {
+                couplePicture.querySelectorAll('source').forEach(source => source.remove());
+            }
+            couplePhoto.src = couplePhoto.dataset.fallbackSrc || '/moe-foto.jpg';
+        }
+
         function preloadFinalPhoto() {
             if (finalPhotoReadyPromise) return finalPhotoReadyPromise;
 
@@ -1254,8 +1265,19 @@
                 }
 
                 const onComplete = () => resolve();
+                const onError = () => {
+                    // После ошибки ждём завершения fallback-загрузки
+                    if (couplePhoto.complete && couplePhoto.naturalWidth > 0) {
+                        resolve();
+                        return;
+                    }
+                    const onFallbackComplete = () => resolve();
+                    couplePhoto.addEventListener('load', onFallbackComplete, { once: true });
+                    couplePhoto.addEventListener('error', onFallbackComplete, { once: true });
+                };
+
                 couplePhoto.addEventListener('load', onComplete, { once: true });
-                couplePhoto.addEventListener('error', onComplete, { once: true });
+                couplePhoto.addEventListener('error', onError, { once: true });
 
                 // Декодирование заранее, если поддерживается браузером
                 if (typeof couplePhoto.decode === 'function') {
@@ -1265,6 +1287,9 @@
 
             return finalPhotoReadyPromise;
         }
+
+        // Если мобильный srcset недоступен у провайдера/сети, переключаемся на основное фото
+        couplePhoto.addEventListener('error', applyPhotoFallback);
 
         /* ============================================
            ФИНАЛЬНЫЙ ЭКРАН
