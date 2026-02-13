@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Будешь моей валентинкой?</title>
+    <link rel="preload" as="image" href="moe-foto-mobile.jpg" media="(max-width: 768px)" fetchpriority="high">
+    <link rel="preload" as="image" href="moe-foto.jpg" media="(min-width: 769px)" fetchpriority="high">
     <style>
         /* ============================================
            БАЗОВЫЕ СТИЛИ И СБРОС
@@ -336,6 +338,7 @@
             opacity: 0;
             filter: blur(20px);
             transform: scale(0.8);
+            will-change: transform, opacity, filter;
         }
 
         .photo-container.show {
@@ -354,6 +357,12 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+
+        .photo-container picture {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         .photo-glow {
@@ -461,6 +470,12 @@
 
             .photo-container {
                 width: min(84vw, 360px);
+                filter: blur(10px);
+            }
+
+            .photo-glow {
+                filter: blur(18px);
+                opacity: 0.38;
             }
 
             .final-text {
@@ -674,15 +689,20 @@
     <div class="final-screen" id="finalScreen">
         <canvas class="final-hearts-canvas" id="finalHeartsCanvas"></canvas>
         <div class="final-header" id="finalHeader">
-            <h2 class="final-text">Люблю тебе ❤️</h2>
+            <h2 class="final-text">Люблю тебя ❤️</h2>
         </div>
         <div class="photo-container" id="photoContainer">
             <div class="photo-glow"></div>
             <!-- 
                 ЗАМЕНИТЕ ИЗОБРАЖЕНИЕ НИЖЕ:
-                Замените src на путь к вашему фото
+                Для быстрой загрузки замените оба файла:
+                - moe-foto-mobile.jpg (мобильная версия)
+                - moe-foto.jpg (основная версия)
             -->
-            <img src="moe-foto.jpg" alt="Наше фото" id="couplePhoto">
+            <picture>
+                <source srcset="moe-foto-mobile.jpg" media="(max-width: 768px)">
+                <img src="moe-foto.jpg" alt="Наше фото" id="couplePhoto" loading="eager" decoding="async" fetchpriority="high" width="714" height="1280">
+            </picture>
         </div>
         <div class="final-notes" id="finalNotes">
             <p class="final-note" id="finalNotePrimary" data-full-text="Сегодня День святого Валентина — отличный день, чтобы начать отношения, ведь такая дата никогда не забудется"></p>
@@ -705,8 +725,10 @@
         const btnOk = document.getElementById('btnOk');
         const finalScreen = document.getElementById('finalScreen');
         const photoContainer = document.getElementById('photoContainer');
+        const couplePhoto = document.getElementById('couplePhoto');
         const finalHeader = document.getElementById('finalHeader');
         const finalNotes = document.getElementById('finalNotes');
+        const valentineCard = document.querySelector('.valentine-card');
         const finalNotePrimary = document.getElementById('finalNotePrimary');
         const finalNoteSecondary = document.getElementById('finalNoteSecondary');
         const finalHeartsCanvas = document.getElementById('finalHeartsCanvas');
@@ -720,6 +742,11 @@
         let isAudioInitialized = false;
         let animationId;
         let finalAnimationId;
+        let isMainAnimationRunning = false;
+        let isFinalAnimationRunning = false;
+        let isFinalScreenActive = false;
+        let resizeTimeoutId;
+        let finalPhotoReadyPromise;
 
         // Проверка на мобильное устройство
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -896,7 +923,8 @@
 
         function initFinalHearts() {
             finalHearts = [];
-            for (let i = 0; i < 30; i++) {
+            const heartCount = isMobile ? 18 : 30;
+            for (let i = 0; i < heartCount; i++) {
                 const heart = new FinalHeart();
                 heart.y = Math.random() * height;
                 finalHearts.push(heart);
@@ -904,6 +932,8 @@
         }
 
         function animate() {
+            if (!isMainAnimationRunning) return;
+
             ctx.clearRect(0, 0, width, height);
             
             hearts.forEach(heart => {
@@ -915,6 +945,8 @@
         }
 
         function animateFinal() {
+            if (!isFinalAnimationRunning) return;
+
             finalCtx.clearRect(0, 0, width, height);
             
             finalHearts.forEach(heart => {
@@ -923,6 +955,34 @@
             });
             
             finalAnimationId = requestAnimationFrame(animateFinal);
+        }
+
+        function startMainAnimation() {
+            if (isMainAnimationRunning) return;
+            isMainAnimationRunning = true;
+            animate();
+        }
+
+        function stopMainAnimation() {
+            isMainAnimationRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function startFinalAnimation() {
+            if (isFinalAnimationRunning) return;
+            isFinalAnimationRunning = true;
+            animateFinal();
+        }
+
+        function stopFinalAnimation() {
+            isFinalAnimationRunning = false;
+            if (finalAnimationId) {
+                cancelAnimationFrame(finalAnimationId);
+                finalAnimationId = null;
+            }
         }
 
         /* ============================================
@@ -1084,7 +1144,7 @@
         function moveNoButton() {
             noAttempts++;
             
-            const cardRect = document.querySelector('.valentine-card').getBoundingClientRect();
+            const cardRect = valentineCard.getBoundingClientRect();
             const btnRect = btnNo.getBoundingClientRect();
             
             // Вычисляем доступную область внутри карточки
@@ -1140,9 +1200,9 @@
             rejectMessage.classList.add('show');
             
             // Добавляем анимацию отказа
-            document.querySelector('.valentine-card').classList.add('reject-animation');
+            valentineCard.classList.add('reject-animation');
             setTimeout(() => {
-                document.querySelector('.valentine-card').classList.remove('reject-animation');
+                valentineCard.classList.remove('reject-animation');
             }, 500);
         });
 
@@ -1183,12 +1243,36 @@
             await typeText(finalNoteSecondary, finalNoteSecondary.dataset.fullText || '', 16);
         }
 
+        function preloadFinalPhoto() {
+            if (finalPhotoReadyPromise) return finalPhotoReadyPromise;
+
+            finalPhotoReadyPromise = new Promise((resolve) => {
+                // Уже загружено из кеша/предзагрузки
+                if (couplePhoto.complete && couplePhoto.naturalWidth > 0) {
+                    resolve();
+                    return;
+                }
+
+                const onComplete = () => resolve();
+                couplePhoto.addEventListener('load', onComplete, { once: true });
+                couplePhoto.addEventListener('error', onComplete, { once: true });
+
+                // Декодирование заранее, если поддерживается браузером
+                if (typeof couplePhoto.decode === 'function') {
+                    couplePhoto.decode().then(onComplete).catch(() => {});
+                }
+            });
+
+            return finalPhotoReadyPromise;
+        }
+
         /* ============================================
            ФИНАЛЬНЫЙ ЭКРАН
            ============================================ */
         function showFinalScreen() {
             // Останавливаем фоновую анимацию
-            cancelAnimationFrame(animationId);
+            stopMainAnimation();
+            isFinalScreenActive = true;
             
             // Показываем финальный экран
             finalScreen.classList.add('active');
@@ -1199,10 +1283,11 @@
             // Усиленная вибрация
             vibrate([200, 100, 300, 100, 400]);
             
-            // Показываем фото с задержкой
-            setTimeout(() => {
+            // Показываем фото после короткой задержки и попытки предзагрузки
+            setTimeout(async () => {
+                await Promise.race([preloadFinalPhoto(), sleep(700)]);
                 photoContainer.classList.add('show');
-            }, 500);
+            }, 350);
             
             // Показываем заголовок
             setTimeout(() => {
@@ -1216,21 +1301,46 @@
             
             // Запускаем анимацию сердечек на финальном экране
             initFinalHearts();
-            animateFinal();
+            startFinalAnimation();
         }
 
         /* ============================================
            ИНИЦИАЛИЗАЦИЯ
            ============================================ */
-        window.addEventListener('resize', () => {
+        function handleResize() {
             resizeCanvas();
+            if (isFinalScreenActive) {
+                initFinalHearts();
+                return;
+            }
             initHearts();
+        }
+
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeoutId);
+            resizeTimeoutId = setTimeout(handleResize, 120);
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopMainAnimation();
+                stopFinalAnimation();
+                return;
+            }
+
+            if (isFinalScreenActive) {
+                startFinalAnimation();
+                return;
+            }
+
+            startMainAnimation();
         });
 
         // Первоначальная инициализация
         resizeCanvas();
         initHearts();
-        animate();
+        preloadFinalPhoto();
+        startMainAnimation();
 
         // Инициализация аудио при первом взаимодействии
         document.addEventListener('click', initAudio, { once: true });
