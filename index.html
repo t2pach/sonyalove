@@ -285,6 +285,8 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            gap: 24px;
+            padding: 30px 20px;
             opacity: 0;
             transition: opacity 1.5s ease;
         }
@@ -292,6 +294,25 @@
         .final-screen.active {
             display: flex;
             opacity: 1;
+        }
+
+        .final-header {
+            max-width: min(92vw, 760px);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .final-header.show {
+            animation: finalMessageReveal 1.5s ease forwards;
+            animation-delay: 0.9s;
+        }
+
+        @keyframes finalMessageReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .photo-container {
@@ -347,22 +368,37 @@
         }
 
         .final-text {
-            margin-top: 40px;
+            margin-top: 0;
             font-size: 3rem;
             color: white;
             text-shadow: 0 0 30px rgba(255, 107, 157, 0.8);
+            margin-bottom: 10px;
+        }
+
+        .final-notes {
+            max-width: min(92vw, 760px);
+            text-align: center;
             opacity: 0;
+            transform: translateY(14px);
         }
 
-        .final-text.show {
-            animation: textReveal 1.5s ease forwards;
-            animation-delay: 1.5s;
+        .final-notes.show {
+            animation: finalMessageReveal 0.8s ease forwards;
         }
 
-        @keyframes textReveal {
-            to {
-                opacity: 1;
-            }
+        .final-note {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            line-height: 1.45;
+            text-shadow: 0 0 18px rgba(255, 107, 157, 0.25);
+            margin-top: 8px;
+            min-height: 1.45em;
+        }
+
+        .final-note-secondary {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.75);
+            font-style: italic;
         }
 
         .final-hearts-canvas {
@@ -420,6 +456,14 @@
 
             .final-text {
                 font-size: 2rem;
+            }
+
+            .final-note {
+                font-size: 0.88rem;
+            }
+
+            .final-note-secondary {
+                font-size: 0.72rem;
             }
         }
 
@@ -530,6 +574,9 @@
          ============================================ -->
     <div class="final-screen" id="finalScreen">
         <canvas class="final-hearts-canvas" id="finalHeartsCanvas"></canvas>
+        <div class="final-header" id="finalHeader">
+            <h2 class="final-text">Люблю тебе ❤️</h2>
+        </div>
         <div class="photo-container" id="photoContainer">
             <div class="photo-glow"></div>
             <!-- 
@@ -538,7 +585,10 @@
             -->
             <img src="moe-foto.jpg" alt="Наше фото" id="couplePhoto">
         </div>
-        <h2 class="final-text" id="finalText">Люблю тебя ❤️</h2>
+        <div class="final-notes" id="finalNotes">
+            <p class="final-note" id="finalNotePrimary" data-full-text="сегодня святого валентина отличный день чтобы начать отношения ведь такая дата никогда не забудеться"></p>
+            <p class="final-note final-note-secondary" id="finalNoteSecondary" data-full-text="принять предложение или отклонить можно в лс игнор данного сообщения будет расцениваться как неуважение к чужому труду"></p>
+        </div>
     </div>
 
     <script>
@@ -556,7 +606,10 @@
         const btnOk = document.getElementById('btnOk');
         const finalScreen = document.getElementById('finalScreen');
         const photoContainer = document.getElementById('photoContainer');
-        const finalText = document.getElementById('finalText');
+        const finalHeader = document.getElementById('finalHeader');
+        const finalNotes = document.getElementById('finalNotes');
+        const finalNotePrimary = document.getElementById('finalNotePrimary');
+        const finalNoteSecondary = document.getElementById('finalNoteSecondary');
         const finalHeartsCanvas = document.getElementById('finalHeartsCanvas');
         const finalCtx = finalHeartsCanvas.getContext('2d');
 
@@ -1012,6 +1065,25 @@
             }
         });
 
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function typeText(element, text, delay = 24) {
+            element.textContent = '';
+            for (let i = 1; i <= text.length; i++) {
+                element.textContent = text.slice(0, i);
+                await sleep(delay);
+            }
+        }
+
+        async function showFinalNotesWithTyping() {
+            finalNotes.classList.add('show');
+            await typeText(finalNotePrimary, finalNotePrimary.dataset.fullText || '', 24);
+            await sleep(300);
+            await typeText(finalNoteSecondary, finalNoteSecondary.dataset.fullText || '', 16);
+        }
+
         /* ============================================
            ФИНАЛЬНЫЙ ЭКРАН
            ============================================ */
@@ -1033,10 +1105,15 @@
                 photoContainer.classList.add('show');
             }, 500);
             
-            // Показываем текст
+            // Показываем заголовок
             setTimeout(() => {
-                finalText.classList.add('show');
-            }, 1500);
+                finalHeader.classList.add('show');
+            }, 1200);
+
+            // Показываем подписи под фото с печатающимся эффектом
+            setTimeout(() => {
+                showFinalNotesWithTyping();
+            }, 2300);
             
             // Запускаем анимацию сердечек на финальном экране
             initFinalHearts();
